@@ -18,7 +18,7 @@ int main()
 	MPI_Get_processor_name(processorName, &namelen);
 
 	//to find the maximum rank
-	int max=123;
+	int max=0;
 
 	// to initiate the random every time
 //	srand(time(NULL));
@@ -77,8 +77,7 @@ int main()
 
 
 		cout<<"Winner is "<<max<<endl;
-
-
+		//Broadcasting winner of the election
 
 	}
 	else if(myrank!=initiator){
@@ -114,6 +113,11 @@ int main()
 
 
 	}
+
+		MPI_Bcast(&max,1,MPI_INT,max,MPI_COMM_WORLD);
+		cout<<myrank<<" received thank you from winner \n";
+
+
 
 
 	MPI_Finalize();
