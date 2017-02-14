@@ -9,34 +9,43 @@ using namespace std;
 
 int main()
 {
-	int myrank,nprocs,initiator;
+	int myrank,nprocs,namelen;
+	int initiator=0;
+	char processorName[10];
  	MPI_Init(NULL,NULL);
  	MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
  	MPI_Comm_rank(MPI_COMM_WORLD,&myrank);
+	MPI_Get_processor_name(processorName, &namelen);
+
 	//to find the maximum rank
-	int max=0;
+	int max=123;
 
 	// to initiate the random every time
+//	srand(time(NULL));
 
 	int *array = new int[nprocs];
+//	int array[nprocs];
 
 	for(int i=0;i<nprocs;++i)
 	{
 		array[i]=-1;
 	}
 	int root=0;
-	if(myrank==root)
+	if(myrank==0)
 	{
+		while(initiator==0)
+		{
 		srand(time(NULL));
 		initiator=rand()%nprocs;
+		}
+
 		cout<<"The inititaor for all the processses will be "<<initiator<<endl;
-		MPI_Bcast(&initiator,1,MPI_INT,myrank,MPI_COMM_WORLD);
-		
 	}
-	else 
-	{
-		MPI_Bcast(&initiator,1,MPI_INT,root,MPI_COMM_WORLD);
-	}
+
+
+		MPI_Bcast(&initiator,1,MPI_INT,0,MPI_COMM_WORLD);
+
+
 	if(myrank == initiator)
 	{
 
@@ -45,13 +54,13 @@ int main()
 		array[myrank] = myrank;
 
 		//send to the process which is 1 bigger means make a ring
-		MPI_Send(array,nprocs,MPI_INT,myrank+1,999,MPI_COMM_WORLD);
+		MPI_Send(array,nprocs,MPI_INT,(myrank+1)%nprocs,999,MPI_COMM_WORLD);
 
-		cout<<"\n\t\t"<<myrank <<" is waiting for the last process \n"<<endl;
-		MPI_Recv(array, nprocs, MPI_INT, myrank-1, 999, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-		cout<<"\n\t\tThe initiaor received the message \n"<<endl;
-		cout <<"My rank is "<< myrank << endl<<endl;
+		cout<<"\n\t\t"<<myrank <<" is waiting for the last process "<<(myrank-1)%nprocs<<" running on "<<processorName<<endl<<endl;
+		MPI_Recv(array, nprocs, MPI_INT, (myrank-1)%nprocs, 999, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+		cout<<"\n\t\tThe initiator received the message \n"<<endl;
 
+		cout <<"My rank is "<< myrank <<" running on "<<processorName<< endl<<endl;
 
 		cout<<"The array in the rank "<<myrank<<" is"<<endl;
 		for(int j=0;j<nprocs;++j)
@@ -59,7 +68,6 @@ int main()
 				cout<<array[j]<<" ";
 			}
 		cout<<endl; 
-
 		max = 0;
 		for(int i=0;i<nprocs;++i)
 		{
@@ -68,13 +76,23 @@ int main()
 		}
 
 
-		cout<<"Maximum value is "<<max<<endl;
+		cout<<"Winner is "<<max<<endl;
+
+
 
 	}
-	else if(myrank != initiator){
-		
-		MPI_Recv(array, nprocs, MPI_INT, myrank-1, 999, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-		cout<<" My rank is "<<myrank<<" and I have received from "<<myrank-1<<endl;
+	else if(myrank!=initiator){
+		if(myrank == 0)
+		{
+		MPI_Recv(array, nprocs, MPI_INT, (nprocs-1)%nprocs, 999, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+		cout<<" My rank is "<<myrank<<" and I have received from "<<(nprocs-1)%nprocs<<" running on "<<processorName<<endl;
+		}
+		else
+		{
+		MPI_Recv(array, nprocs, MPI_INT, (myrank-1)%nprocs, 999, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+		cout<<" My rank is "<<myrank<<" and I have received from "<<(myrank-1)%nprocs<<" running on "<<processorName<<endl;
+		}		
+
 
 		cout<<"The array in the rank "<<myrank<<" is"<<endl;
 		for(int i=0;i<nprocs;++i)
@@ -96,6 +114,7 @@ int main()
 
 
 	}
+
 
 	MPI_Finalize();
 }
